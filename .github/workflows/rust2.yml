@@ -1,0 +1,99 @@
+name: Build Test2
+
+on:
+  push:
+    branches:
+    - master
+    paths:
+    - .github/workflows/**
+    - src/**
+    - Cargo.toml
+
+jobs:
+  test:
+    name: build project
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+
+    - name: rust_install
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+        
+    - name: Setup NDK
+      run: |
+        curl -LO https://dl.google.com/android/repository/android-ndk-r21e-linux-x86_64.zip
+        unzip android-ndk-r21e-linux-x86_64.zip
+        echo "${PWD}/android-ndk-r21e/toolchains/llvm/prebuilt/linux-x86_64/bin/" >> $GITHUB_PATH
+        rm android-ndk-r21e-linux-x86_64.zip
+
+    - name: Setup NDK environment
+      run: |
+        export TOOLCHAIN=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64
+        export TARGET=aarch64-linux-android
+        export AR=$TOOLCHAIN/bin/$TARGET-ar
+        export CC=$TOOLCHAIN/bin/$TARGET21-clang
+        export CXX=$TOOLCHAIN/bin/$TARGET21-clang++
+        echo "CC=${CC}" >> $GITHUB_ENV
+        echo "CXX=${CXX}" >> $GITHUB_ENV
+        
+    - name: install_cross
+      run: |
+        cargo install cross --git https://github.com/cross-rs/cross
+
+    - name: build
+      run: |
+        cross build --target i686-pc-windows-gnu --release
+        cross build --target aarch64-unknown-linux-musl --release
+        cross build --target i686-unknown-linux-musl --release
+        cross build --target armv7-unknown-linux-musleabi --release
+        cross build --target aarch64-linux-android --release
+
+    - name: before_upload
+      run: |
+        mkdir Release
+        cp target/i686-pc-windows-gnu/release/kook_onebot.exe Release/kook_onebot_windows_i686.exe
+        cp target/aarch64-unknown-linux-musl/release/kook_onebot Release/kook_onebot_linux_aarch64
+        cp target/i686-unknown-linux-musl/release/kook_onebot Release/kook_onebot_linux_i686
+        cp target/armv7-unknown-linux-musleabi/release/kook_onebot Release/kook_onebot_linux_armv7
+        cp target/aarch64-linux-android/release/kook_onebot Release/kook_onebot_android_aarch64
+
+    - name: upload file1
+      uses: actions/upload-artifact@v3
+      with:
+        name: kook_onebot_windows_i686.exe
+        path: 
+            Release/kook_onebot_windows_i686.exe
+
+    - name: upload file2
+      uses: actions/upload-artifact@v3
+      with:
+        name: kook_onebot_linux_aarch64
+        path: 
+            Release/kook_onebot_linux_aarch64
+
+    - name: upload file3
+      uses: actions/upload-artifact@v3
+      with:
+        name: kook_onebot_linux_i686
+        path: 
+          Release/kook_onebot_linux_i686
+
+    - name: upload file4
+      uses: actions/upload-artifact@v3
+      with:
+        name: kook_onebot_linux_armv7
+        path: 
+          Release/kook_onebot_linux_armv7
+
+    - name: upload file file5
+      uses: actions/upload-artifact@v3
+      with:
+        name: kook_onebot_android_aarch64
+        path: 
+          Release/kook_onebot_android_aarch64
+
