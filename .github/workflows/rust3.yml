@@ -1,0 +1,41 @@
+name: Build Test for Linux AMD64
+
+on:
+  push:
+    branches:
+    - master
+    paths:
+    - .github/workflows/**
+    - src/**
+    - Cargo.toml
+
+jobs:
+  test:
+    name: build project for Linux AMD64
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+
+    - name: rust_install
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+
+    - name: build
+      run: |
+        cargo build --release
+
+    - name: before_upload
+      run: |
+        mkdir Release
+        cp target/release/kook_onebot Release/kook_onebot_linux_amd64
+
+    - name: upload file
+      uses: actions/upload-artifact@v3
+      with:
+        name: kook_onebot_linux_amd64
+        path: 
+          Release/kook_onebot_linux_amd64
